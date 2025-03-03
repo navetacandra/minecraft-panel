@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + Svelte</title>
+    <title>Panel</title>
     <link href="/assets/css/bootstrap.css" rel="stylesheet" />
     <link href="/assets/css/app.css" rel="stylesheet" />
   </head>
@@ -15,7 +15,7 @@
           <div class="col-8 col-md-10 col-sm-12 mb-3">
             <button
               type="button"
-              class="btn btn-primary position-relative me-2"
+              class="col-auto mb-2 btn btn-primary position-relative me-2"
             >
               <span id="status">-</span>
               <span
@@ -25,16 +25,16 @@
                 <span class="visually-hidden">New alerts</span>
               </span>
             </button>
-            <button type="button" class="btn btn-success" onclick="start()">
+            <button type="button" class="col-auto mb-2 btn btn-success" onclick="start()">
               Start
             </button>
-            <button type="button" class="btn btn-warning" onclick="restart()">
+            <button type="button" class="col-auto mb-2 btn btn-warning" onclick="restart()">
               Restart
             </button>
-            <button type="button" class="btn btn-danger" onclick="stop()">
+            <button type="button" class="col-auto mb-2 btn btn-danger" onclick="stop()">
               Stop
             </button>
-            <button type="button" class="btn btn-secondary" onclick="clear_log()">
+            <button type="button" class="col-auto mb-2 btn btn-secondary" onclick="clear_log()">
               Clear Log
             </button>
           </div>
@@ -58,7 +58,6 @@
               class="text-white rounded py-2 overflow-auto"
               style="min-height: 75vh; max-height: 75vh"
               id="logs"
-              bind:this="{logs}"
             ></pre>
           </div>
         </div>
@@ -90,7 +89,7 @@
       </div>
     </main>
     <script src="/assets/js/bootstrap.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js" integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA==" crossorigin="anonymous"></script>
+    <script src="/assets/js/socket.io.js"></script>
     <script>
       const socket = io();
       let status = document.querySelector("#status");
@@ -110,9 +109,7 @@
         }
       });
 
-      socket.on("clear", (log) => {
-        logs.textContent = '';
-      })
+      socket.on("clear", (log) => logs.textContent = "");
       socket.on("log", (log) => {
         logs.textContent += log;
         if (autoScroll.checked) {

@@ -47,7 +47,7 @@ def handle_file_cache(filepath):
     return response
 
 
-def download_file(url, filename):
+def download_file(url, filename, callback=None):
     log_info(f"Downloading {url}")
     response = requests.get(url, stream=True)
     if response.status_code == 200:
@@ -56,6 +56,8 @@ def download_file(url, filename):
             for chunk in response.iter_content(1024):
                 file.write(chunk)
         log_info("Download finished")
+        if callback:
+            callback(filepath)
         return True
     else:
         log_info("Download failed")
@@ -112,7 +114,9 @@ def install_server(server_type="paper", version=""):
         f.write(
             f"executable={server_type}.jar\nserver-type={server_type}\nmin-memory=128M\nmax-memory=3G\ncore-usage=1\n"
         )
-    download_file(url, f"{server_type}.jar")
+    def on_complete(_):
+        socketio.emit('install')
+    download_file(url, f"{server_type}.jar", callback=on_complete)
     with open(os.path.join(SERVER_LOCATION, "eula.txt"), "w") as f:
         f.write("eula=true")
 
@@ -284,7 +288,10 @@ def run_command_endpoint():
 
 @app.route("/")
 def serve_index():
-    return handle_file_cache("static/index.html")
+    if is_installed():
+        return handle_file_cache("static/index.html")
+    else:
+        return handle_file_cache("static/install.html")
 
 
 @app.route("/assets/<path:filename>")

@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Install</title>
+    <link href="/assets/css/bootstrap.css" rel="stylesheet" />
+    <link href="/assets/css/app.css" rel="stylesheet" />
+  </head>
+  <body
+    class="bg-dark overflow-x-hidden"
+    style="min-height: 100dvh; min-width: 100dvw; max-width: 100dvw"
+  >
+    <main class="overflow-x-hidden">
+      <div class="container overflow-x-hidden">
+        <form class="row justify-content-center g-3 mt-3 mb-2">
+          <div class="col-auto">
+            <select
+              class="form-select"
+              aria-label="Default select example"
+              id="server-type"
+            >
+              <option value="paper" selected>Paper</option>
+              <option value="purpur">Purpur</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <select
+              class="form-select"
+              aria-label="Default select example"
+              id="server-version"
+            ></select>
+          </div>
+          <div class="col-auto">
+            <button
+              type="button"
+              class="btn btn-primary mb-3"
+              onclick="install()"
+            >
+              Install
+            </button>
+          </div>
+        </form>
+        <div class="row justify-content-start mb-3">
+          <div class="form-check text-white col me-3">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="auto-scroll"
+              checked
+            />
+            <label class="form-check-label" for="auto-scroll">
+              Auto-scroll
+            </label>
+          </div>
+          <button
+            type="button"
+            class="col-2 btn btn-secondary"
+            onclick="clear_log()"
+          >
+            Clear Log
+          </button>
+        </div>
+        <div class="row justify-content-center mb-1 mt-2">
+          <div class="col-8 col-sm-10 bg-black mb-1">
+            <pre
+              class="text-white rounded py-2 overflow-auto"
+              style="min-height: 75vh; max-height: 75vh"
+              id="logs"
+            ></pre>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="/assets/js/bootstrap.js" defer></script>
+    <script src="/assets/js/socket.io.js"></script>
+    <script>
+      const socket = io();
+      let logs = document.querySelector("#logs");
+      let serverType = document.querySelector("#server-type");
+      let serverVersion = document.querySelector("#server-version");
+      const autoScroll = document.querySelector("#auto-scroll");
+
+      socket.on("connect", (_) => get_versions());
+      serverType.addEventListener("change", (_) => get_versions());
+
+      socket.on("install", (log) => window.location.reload());
+      socket.on("clear", (log) => (logs.textContent = ""));
+      socket.on("log", (log) => {
+        logs.textContent += log;
+        if (autoScroll.checked) {
+          logs.scrollTop = logs.scrollHeight;
+        }
+      });
+
+      async function get_versions() {
+        serverVersion.innerHTML = "";
+        const { versions } = await (
+          await fetch(`/version/${serverType.value}`)
+        ).json();
+        serverVersion.innerHTML = versions
+          .map(
+            (v, i) =>
+              `<option value="${v}" ${i == 0 ? "selected" : ""}>${v}</option>`
+          )
+          .join("");
+      }
+
+      function install() {
+        fetch(`/install/${serverType.value}/${serverVersion.value}`);
+      }
+
+      function clear_log() {
+        fetch(`/clear-log`);
+      }
+    </script>
+  </body>
+</html>
