@@ -22,6 +22,31 @@ if not os.path.exists(LOG_PATH):
     open(LOG_PATH, "w").close()
 
 
+def download_static_assets():
+    asset_path = os.path.join(os.path.dirname(__file__), "static", "assets")
+    css_path = os.path.join(asset_path, "css")
+    js_path = os.path.join(asset_path, "js")
+    os.makedirs(asset_path, exist_ok=True)
+    os.makedirs(css_path, exist_ok=True)
+    os.makedirs(js_path, exist_ok=True)
+
+    files = [
+        os.path.join(css_path, "bootstrap.css"),
+        os.path.join(js_path, "bootstrap.js"),
+        os.path.join(js_path, "bootstrap.js.map"),
+        os.path.join(js_path, "socket.io.js")
+    ]
+    urls = [
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.css",
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js",
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js.map",
+        "https://cdn.socket.io/4.7.2/socket.io.js"
+    ]
+
+    for i in range(len(files)):
+        download_file(urls[i], files[i], log=False)
+
+
 def log_info(message, log_type="SYSTEM"):
     msg = ""
     if not log_type == "NONE":
@@ -47,20 +72,22 @@ def handle_file_cache(filepath):
     return response
 
 
-def download_file(url, filename, callback=None):
-    log_info(f"Downloading {url}")
+def download_file(url, filepath, log=True, callback=None):
+    if log:
+        log_info(f"Downloading {url}")
     response = requests.get(url, stream=True)
     if response.status_code == 200:
-        filepath = os.path.join(SERVER_LOCATION, filename)
         with open(filepath, "wb") as file:
             for chunk in response.iter_content(1024):
                 file.write(chunk)
-        log_info("Download finished")
+        if log:
+            log_info("Download finished")
         if callback:
             callback(filepath)
         return True
     else:
-        log_info("Download failed")
+        if log:
+            log_info("Download failed")
         return False
 
 
@@ -116,7 +143,11 @@ def install_server(server_type="paper", version=""):
         )
     def on_complete(_):
         socketio.emit('install')
-    download_file(url, f"{server_type}.jar", callback=on_complete)
+    download_file(
+            url, 
+            os.path.join(SERVER_LOCATION, f"{server_type}.jar"), 
+            callback=on_complete
+        )
     with open(os.path.join(SERVER_LOCATION, "eula.txt"), "w") as f:
         f.write("eula=true")
 
@@ -313,4 +344,6 @@ def connect():
 
 
 if __name__ == "__main__":
+    download_static_assets()
+
     socketio.run(app, host="0.0.0.0", port=3000)
