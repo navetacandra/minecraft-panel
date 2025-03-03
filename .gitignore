@@ -1,4 +1,4 @@
-node_modules/
+venv/
 minecraft_server/
 SERVER.settings
 log.txt
