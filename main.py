@@ -32,15 +32,19 @@ def download_static_assets():
 
     files = [
         os.path.join(css_path, "bootstrap.css"),
+        os.path.join(css_path, "bootstrap.css.map"),
         os.path.join(js_path, "bootstrap.js"),
         os.path.join(js_path, "bootstrap.js.map"),
         os.path.join(js_path, "socket.io.js")
+        os.path.join(js_path, "socket.io.js.map")
     ]
     urls = [
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.css",
+        "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.css.map",
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js",
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js.map",
         "https://cdn.socket.io/4.7.2/socket.io.js"
+        "https://cdn.socket.io/4.7.2/socket.io.js.map"
     ]
 
     for i in range(len(files)):
