@@ -21,6 +21,7 @@ os.makedirs(SERVER_LOCATION, exist_ok=True)
 if not os.path.exists(LOG_PATH):
     open(LOG_PATH, "w").close()
 
+
 def log_info(message, log_type="SYSTEM"):
     msg = ""
     if not log_type == "NONE":
@@ -34,6 +35,7 @@ def log_info(message, log_type="SYSTEM"):
     if not log_type == "NONE":
         socketio.emit("log", msg)
 
+
 def handle_file_cache(filepath):
     if not os.path.exists(filepath) or not os.path.isfile(filepath):
         abort(404)
@@ -43,6 +45,7 @@ def handle_file_cache(filepath):
 
     response.headers["Cache-Control"] = "public, max-age=31536000"
     return response
+
 
 def download_file(url, filename):
     log_info(f"Downloading {url}")
@@ -58,6 +61,7 @@ def download_file(url, filename):
         log_info("Download failed")
         return False
 
+
 def is_installed():
     if not os.path.exists(SERVER_SETTING):
         return False
@@ -68,6 +72,7 @@ def is_installed():
         os.path.join(SERVER_LOCATION, executable.group(1))
     )
 
+
 def get_versions(server_type="paper"):
     if server_type == "paper":
         response = requests.get("https://api.papermc.io/v2/projects/paper")
@@ -77,6 +82,7 @@ def get_versions(server_type="paper"):
         html = response.text
         return re.findall(r'option value="([^"]+)"', html)
     return []
+
 
 def get_jar_download_url(server_type, version):
     if server_type == "paper":
@@ -92,6 +98,7 @@ def get_jar_download_url(server_type, version):
         )
         return match.group(1) if match else ""
     return ""
+
 
 def install_server(server_type="paper", version=""):
     if is_installed():
@@ -109,6 +116,7 @@ def install_server(server_type="paper", version=""):
     with open(os.path.join(SERVER_LOCATION, "eula.txt"), "w") as f:
         f.write("eula=true")
 
+
 def handle_server_output():
     for line in iter(server_process.stdout.readline, b""):
         decoded_line = line.decode("utf-8").strip()
@@ -122,11 +130,13 @@ def handle_server_output():
         log_info(decoded_line, log_type="NONE")
         socketio.emit("log", f"{decoded_line}\n")
 
+
 def on_server_exit():
     global server_process
     server_process.wait()
     socketio.emit("status", False)
     server_process = None
+
 
 def start_server():
     global server_process
@@ -154,14 +164,15 @@ def start_server():
         cwd=SERVER_LOCATION,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
-        stdin=subprocess.PIPE
+        stdin=subprocess.PIPE,
     )
-    
+
     exit_thread = threading.Thread(target=on_server_exit)
     exit_thread.start()
 
     socketio.start_background_task(handle_server_output)
     socketio.emit("status", True)
+
 
 def stop_server():
     global server_process
@@ -177,12 +188,14 @@ def stop_server():
         server_process.terminate()
         server_process.wait()
 
+
 def restart_server():
     if not server_process:
         start_server()
     else:
         stop_server()
         start_server()
+
 
 def run_command(cmd):
     if not server_process:
@@ -193,9 +206,11 @@ def run_command(cmd):
     server_process.stdin.flush()
     log_info(f"> {cmd}", "COMMAND")
 
+
 @app.route("/version/<server>", methods=["GET"])
 def version(server):
     return jsonify({"status": "OK", "versions": get_versions(server)})
+
 
 @app.route("/install/<server>/<version>", methods=["GET"])
 def install(server, version):
@@ -205,6 +220,7 @@ def install(server, version):
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+
 @app.route("/start", methods=["GET"])
 def start():
     try:
@@ -212,6 +228,7 @@ def start():
         return jsonify({"status": "OK"})
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
+
 
 @app.route("/stop", methods=["GET"])
 def stop():
@@ -221,6 +238,7 @@ def stop():
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
 
+
 @app.route("/restart", methods=["GET"])
 def restart():
     try:
@@ -228,6 +246,7 @@ def restart():
         return jsonify({"status": "OK"})
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
+
 
 @app.route("/clear-log", methods=["GET"])
 def clear_log():
@@ -239,6 +258,7 @@ def clear_log():
         return jsonify({"status": "OK", "message": "Log file cleared"})
     except Exception as e:
         return jsonify({"status": "ERROR", "message": str(e)}), 500
+
 
 @app.route("/run-command", methods=["GET"])
 def run_command_endpoint():
@@ -260,6 +280,7 @@ def run_command_endpoint():
         return jsonify({"status": "OK", "code": 200})
     except Exception as err:
         return jsonify({"status": "ERROR", "code": 500, "message": str(err)}), 500
+
 
 @app.route("/")
 def serve_index():
