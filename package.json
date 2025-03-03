@@ -1,0 +1,30 @@
+{
+  "name": "express-vite",
+  "version": "0.0.1",
+  "description": "Serve front-end components as static files using an Express server, enhanced with CDN-like caching. This setup optimizes efficient delivery and boosts performance for scalable, high-performance web applications. Perfect for developers seeking robust and swift front-end solutions.",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node .",
+    "build": "node bin/build-ui.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/navetacandra/express-vite.git"
+  },
+  "keywords": [
+    "express",
+    "vite"
+  ],
+  "author": "navetacandra <naveta.cand@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/navetacandra/express-vite/issues"
+  },
+  "homepage": "https://github.com/navetacandra/express-vite#readme",
+  "dependencies": {
+    "compression": "^1.7.5",
+    "express": "^4.21.1",
+    "fkill": "^9.0.0",
+    "socket.io": "^4.8.1"
+  }
+}

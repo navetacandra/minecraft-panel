@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vite + Svelte</title>
+    <link href="/assets/css/bootstrap.css" rel="stylesheet" />
+    <link href="/assets/css/app.css" rel="stylesheet" />
+  </head>
+  <body class="bg-dark overflow-x-hidden" style="min-height: 100dvh; min-width: 100dvw; max-width: 100dvw">
+    <main class="overflow-x-hidden">
+      <div class="container overflow-x-hidden">
+        <div class="row justify-content-center mb-1 mt-5">
+          <div class="col-8 col-md-10 col-sm-12 mb-3">
+            <button
+              type="button"
+              class="btn btn-primary position-relative me-2"
+            >
+              <span id="status">-</span>
+              <span
+                class="position-absolute top-0 start-100 translate-middle p-2 border border-light rounded-circle"
+                id="status-badge"
+              >
+                <span class="visually-hidden">New alerts</span>
+              </span>
+            </button>
+            <button type="button" class="btn btn-success" onclick="start()">
+              Start
+            </button>
+            <button type="button" class="btn btn-warning" onclick="restart()">
+              Restart
+            </button>
+            <button type="button" class="btn btn-danger" onclick="stop()">
+              Stop
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="clear_log()">
+              Clear Log
+            </button>
+          </div>
+        </div>
+        <div class="row justify-content-start mb-3">
+          <div class="form-check text-white">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="auto-scroll"
+              checked
+            />
+            <label class="form-check-label" for="auto-scroll">
+              Auto-scroll
+            </label>
+          </div>
+        </div>
+        <div class="row justify-content-center mb-1 mt-2">
+          <div class="col-8 col-sm-10 bg-black mb-1">
+            <pre
+              class="text-white rounded py-2 overflow-auto"
+              style="min-height: 75vh; max-height: 75vh"
+              id="logs"
+              bind:this="{logs}"
+            ></pre>
+          </div>
+        </div>
+        <div class="row justify-content-center mb-2 mt-2">
+          <div class="col-8 col-sm-10 mb-1">
+            <div class="input-group mb-3">
+              <span class="input-group-text bg-black text-white fw-bold"
+                >&gt;_</span
+              >
+              <input
+                type="text"
+                class="form-control"
+                name="command[]"
+                id="command"
+                placeholder="Command"
+                aria-label="Command"
+                onkeydown="command_trigger(event)"
+              />
+              <button
+                class="btn btn-primary"
+                type="button"
+                onclick="execute_command()"
+              >
+                Execute
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+    <script src="/assets/js/bootstrap.js" defer></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      let status = document.querySelector("#status");
+      let statusBadge = document.querySelector("#status-badge");
+      let logs = document.querySelector("#logs");
+      const command = document.querySelector("#command");
+      const autoScroll = document.querySelector("#auto-scroll");
+
+      socket.on("status", (on) => {
+        status.innerText = on ? "Online" : "Offline";
+        if (on) {
+          statusBadge.classList.remove("bg-danger");
+          statusBadge.classList.add("bg-success");
+        } else {
+          statusBadge.classList.add("bg-danger");
+          statusBadge.classList.remove("bg-success");
+        }
+      });
+
+      socket.on("clear", (log) => {
+        logs.textContent = '';
+      })
+      socket.on("log", (log) => {
+        logs.textContent += log;
+        if (autoScroll.checked) {
+          logs.scrollTop = logs.scrollHeight;
+        }
+      });
+
+      function execute_command() {
+        fetch(`/run-command?command=${encodeURIComponent(command.value)}`);
+        command.value = "";
+      }
+
+      function start() {
+        fetch(`/start`);
+      }
+      function stop() {
+        fetch(`/stop`);
+      }
+      function restart() {
+        fetch(`/restart`);
+      }
+      function clear_log() {
+        fetch(`/clear-log`);
+      }
+
+      function command_trigger(e) {
+        if (e.keyCode === 13) execute_command();
+      }
+    </script>
+  </body>
+</html>
