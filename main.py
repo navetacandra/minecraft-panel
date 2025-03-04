@@ -4,7 +4,7 @@ import requests
 import subprocess
 import threading
 import mimetypes
-from flask import Flask, abort, request, send_file, jsonify
+from flask import Flask, abort, request, send_file, jsonify, redirect, url_for
 from flask_socketio import SocketIO
 from werkzeug.utils import secure_filename
 
@@ -35,7 +35,7 @@ def download_static_assets():
         os.path.join(css_path, "bootstrap.css.map"),
         os.path.join(js_path, "bootstrap.js"),
         os.path.join(js_path, "bootstrap.js.map"),
-        os.path.join(js_path, "socket.io.js")
+        os.path.join(js_path, "socket.io.js"),
         os.path.join(js_path, "socket.io.js.map")
     ]
     urls = [
@@ -43,12 +43,13 @@ def download_static_assets():
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.css.map",
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js",
         "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.js.map",
-        "https://cdn.socket.io/4.7.2/socket.io.js"
+        "https://cdn.socket.io/4.7.2/socket.io.js",
         "https://cdn.socket.io/4.7.2/socket.io.js.map"
     ]
 
     for i in range(len(files)):
-        download_file(urls[i], files[i], log=False)
+        if not os.path.exists(files[i]):
+            download_file(urls[i], files[i], log=False)
 
 
 def log_info(message, log_type="SYSTEM"):
@@ -246,6 +247,33 @@ def run_command(cmd):
     log_info(f"> {cmd}", "COMMAND")
 
 
+def plugins_list():
+    if not is_installed():
+        return []
+    plugin_dir = os.path.join(SERVER_LOCATION, "plugins")
+    plugins = []
+    for entry in os.scandir(plugin_dir):
+        if entry.is_file(follow_symlinks=False) and entry.name.endswith(".jar"):
+            plugins.append({ "name": entry.name, "path": entry.path.replace('\\', '/'), "mime": mimetypes.guess_type(entry.path) })
+    return plugins
+
+
+def plugin_find(path = ""):
+    if not is_installed():
+        raise Exception("Server not installed!")
+    plugin_dir = os.path.join(SERVER_LOCATION, "plugins")
+    for entry in os.scandir(plugin_dir):
+        if entry.is_file(follow_symlinks=False) and entry.name.endswith(".jar") and entry.path.replace('\\', '/') == path:
+            return { "name": entry.name, "path": entry.path.replace('\\', '/') }
+    return None
+
+
+def plugin_delete(path = ""):
+    plugin = plugin_find(path)
+    if plugin is not None:
+        os.remove(plugin['path'])
+
+
 @app.route("/version/<server>", methods=["GET"])
 def version(server):
     return jsonify({"status": "OK", "versions": get_versions(server)})
@@ -321,6 +349,44 @@ def run_command_endpoint():
         return jsonify({"status": "ERROR", "code": 500, "message": str(err)}), 500
 
 
+@app.route("/plugins", methods=["GET"])
+def plugins():
+    if is_installed():
+        return handle_file_cache("static/plugins.html")
+    else:
+        return redirect('/')
+
+
+@app.route("/plugin", methods=["DELETE", "POST"])
+def plugin_delete_endpoint():
+    try:
+        if request.method == "DELETE":
+            plugin = request.args.get("plugin")
+            plugin_delete(plugin)
+            socketio.emit("plugins", plugins_list())
+            return jsonify({ "status": "OK" })
+        if request.method == "POST":
+            if "plugin" not in request.files:
+                raise Exception("No file uploaded!")
+            
+            file = request.files["plugin"]
+            if file.filename == "":
+                raise Exception("No file uploaded!")
+            
+            def check_file(filename):
+                return '.' in filename and filename.rsplit('.', 1)[1].lower() in {"jar"}
+
+            if file and check_file(file.filename):
+                filepath = os.path.join(SERVER_LOCATION, "plugins", file.filename)
+                file.save(filepath)
+                socketio.emit("plugins", plugins_list())
+                return jsonify({ "status": "OK" })
+            else:
+                raise Exception("Failed upload file!")
+    except Exception as e:
+        return jsonify({"status": "ERROR", "message": str(e)}), 500
+
+
 @app.route("/")
 def serve_index():
     if is_installed():
@@ -338,6 +404,7 @@ def serve_assets(filename):
 def connect():
     is_running = server_process is not None
     socketio.emit("status", is_running)
+    socketio.emit("plugins", plugins_list())
 
     try:
         with open(LOG_PATH, "r") as log_file:
