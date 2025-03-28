@@ -97,7 +97,7 @@
       async function get_versions() {
         serverVersion.innerHTML = "";
         const { versions } = await (
-          await fetch(`/version/${serverType.value}`)
+          await fetch(`/api/${serverType.value}/versions`)
         ).json();
         serverVersion.innerHTML = versions
           .map(
@@ -108,11 +108,11 @@
       }
 
       function install() {
-        fetch(`/install/${serverType.value}/${serverVersion.value}`);
+        fetch(`/api/install/${serverType.value}/${serverVersion.value}`);
       }
 
       function clear_log() {
-        fetch(`/clear-log`);
+        fetch(`/api/clear_log`);
       }
     </script>
   </body>

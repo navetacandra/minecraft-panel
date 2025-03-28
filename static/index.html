@@ -8,20 +8,36 @@
     <link href="/assets/css/bootstrap.css" rel="stylesheet" />
     <link href="/assets/css/app.css" rel="stylesheet" />
   </head>
-  <body class="bg-dark overflow-x-hidden" style="min-height: 100dvh; min-width: 100dvw; max-width: 100dvw">
+  <body
+    class="bg-dark overflow-x-hidden"
+    style="min-height: 100dvh; min-width: 100dvw; max-width: 100dvw"
+  >
     <nav class="navbar navbar-expand-lg bg-secondary">
       <div class="container">
         <a class="navbar-brand text-white fw-bold" href="/">MCPanel</a>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
           <span class="navbar-toggler-icon text-white"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav">
             <li class="nav-item">
-              <a class="nav-link text-white active" aria-current="page" href="/">Home</a>
+              <a class="nav-link text-white active" aria-current="page" href="/"
+                >Home</a
+              >
             </li>
             <li class="nav-item">
               <a class="nav-link text-white" href="/plugins">Plugins</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/file-manager">File Manager</a>
             </li>
           </ul>
         </div>
@@ -43,18 +59,61 @@
                 <span class="visually-hidden">New alerts</span>
               </span>
             </button>
-            <button type="button" class="col-auto mb-2 btn btn-success" onclick="start()">
+            <button
+              type="button"
+              class="col-auto mb-2 btn btn-success"
+              onclick="fetch('/api/server/start')"
+            >
               Start
             </button>
-            <button type="button" class="col-auto mb-2 btn btn-warning" onclick="restart()">
+            <button
+              type="button"
+              class="col-auto mb-2 btn btn-warning"
+              onclick="fetch('/api/server/restart')"
+            >
               Restart
             </button>
-            <button type="button" class="col-auto mb-2 btn btn-danger" onclick="stop()">
+            <button
+              type="button"
+              class="col-auto mb-2 btn btn-danger"
+              onclick="fetch('/api/server/stop')"
+            >
               Stop
             </button>
-            <button type="button" class="col-auto mb-2 btn btn-secondary" onclick="clear_log()">
+            <button
+              type="button"
+              class="col-auto mb-2 btn btn-secondary"
+              onclick="fetch('/api/clear_log')"
+            >
               Clear Log
             </button>
+          </div>
+        </div>
+        <div class="row justify-content-center mb-1">
+          <div class="col-8 col-md-10 col-sm-12 mb-3">
+            <button
+              type="button"
+              class="col-auto mb-2 btn btn-primary position-relative me-2"
+              onclick="playit_toggle()"
+            >
+              <span>Playit</span>
+              <span
+                class="position-absolute top-0 start-100 translate-middle p-2 border border-light rounded-circle"
+                id="playit-badge"
+              >
+                <span class="visually-hidden">New alerts</span>
+              </span>
+            </button>
+            <div
+              class="col-auto mb-2 btn btn-secondary"
+            >
+              CPU: <span id="cpu-usage">-</span>
+            </div>
+            <div
+              class="col-auto mb-2 btn btn-secondary"
+            >
+              Memory: <span id="memory-usage">-</span>
+            </div>
           </div>
         </div>
         <div class="row justify-content-start mb-3">
@@ -109,10 +168,14 @@
     <script src="/assets/js/bootstrap.js" defer></script>
     <script src="/assets/js/socket.io.js"></script>
     <script>
+      let _playitStatus = false;
       const socket = io();
-      let status = document.querySelector("#status");
-      let statusBadge = document.querySelector("#status-badge");
-      let logs = document.querySelector("#logs");
+      const status = document.querySelector("#status");
+      const statusBadge = document.querySelector("#status-badge");
+      const playitBadge = document.querySelector("#playit-badge");
+      const cpuUsage = document.querySelector("#cpu-usage");
+      const memoryUsage = document.querySelector("#memory-usage");
+      const logs = document.querySelector("#logs");
       const command = document.querySelector("#command");
       const autoScroll = document.querySelector("#auto-scroll");
 
@@ -124,33 +187,47 @@
         } else {
           statusBadge.classList.add("bg-danger");
           statusBadge.classList.remove("bg-success");
+          cpuUsage.innerHTML = `-`;
+          memoryUsage.innerHTML = `-`;
+        }
+      });
+      
+      socket.on("playit", (on) => {
+        _playitStatus = on;
+        if (on) {
+          playitBadge.classList.remove("bg-danger");
+          playitBadge.classList.add("bg-success");
+        } else {
+          playitBadge.classList.add("bg-danger");
+          playitBadge.classList.remove("bg-success");
         }
       });
 
-      socket.on("clear", (log) => logs.textContent = "");
+      socket.on("usage", ({cpu, memory}) => {
+        cpuUsage.innerHTML = `${cpu}%`;
+        memoryUsage.innerHTML = `${Math.ceil(memory)} MB`;
+      });
+
       socket.on("log", (log) => {
         logs.textContent += log;
         if (autoScroll.checked) {
           logs.scrollTop = logs.scrollHeight;
         }
       });
-      
+
+      socket.on("clear", (log) => (logs.textContent = ""));
+
+      function playit_toggle() {
+        fetch(
+          `/api/playit/${_playitStatus ? 'disable' : 'enable'}`
+        );
+      }
+
       function execute_command() {
-        fetch(`/run-command?command=${encodeURIComponent(command.value)}`);
+        fetch(
+          `/api/server/execute?command=${encodeURIComponent(command.value)}`
+        );
         command.value = "";
-      }
-      
-      function start() {
-        fetch(`/start`);
-      }
-      function stop() {
-        fetch(`/stop`);
-      }
-      function restart() {
-        fetch(`/restart`);
-      }
-      function clear_log() {
-        fetch(`/clear-log`);
       }
 
       function command_trigger(e) {

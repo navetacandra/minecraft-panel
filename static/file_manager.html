@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plugin Panel</title>
+    <link href="/assets/css/bootstrap.css" rel="stylesheet" />
+  </head>
+  <body
+    class="bg-dark overflow-x-hidden"
+    style="min-height: 100dvh; min-width: 100dvw; max-width: 100dvw"
+  >
+    <nav class="navbar navbar-expand-lg bg-secondary">
+      <div class="container">
+        <a class="navbar-brand text-white fw-bold" href="/">MCPanel</a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-bs-toggle="collapse"
+          data-bs-target="#navbarNav"
+          aria-controls="navbarNav"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon text-white"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav">
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/">Home</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link text-white" href="/plugins">Plugins</a>
+            </li>
+            <li class="nav-item">
+              <a
+                class="nav-link text-white active"
+                aria-current="page"
+                href="/file-manager"
+                >File Manager</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    <main class="overflow-x-hidden">
+      <div class="container overflow-x-hidden">
+        <div class="row justify-content-end px-2 mb-5 mt-3">
+          <button
+            type="button"
+            class="col-auto btn btn-secondary mx-2"
+            onclick="load()"
+          >
+            Reload
+          </button>
+          <!-- <button
+            type="button"
+            class="col-2 btn btn-primary"
+            data-bs-toggle="modal"
+            data-bs-target="#exampleModal"
+          >
+            Add Plugin
+          </button> -->
+        </div>
+        <div class="row justify-content-center mb-1 mt-2 px-2">
+          <div class="col-sm-10 col-md-10 col-lg-8 mb-3">
+            <ul class="list-group bg-secondary-subtle" id="directory-item"></ul>
+          </div>
+        </div>
+      </div>
+    </main>
+    <!-- <div
+      class="modal fade"
+      id="exampleModal"
+      tabindex="-1"
+      aria-labelledby="exampleModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel">Add Plugin</h1>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form class="row g-2" method="post" action="#" id="plugin_form">
+              <div class="col-auto">
+                <label for="pluginFile" class="visually-hidden">Plugin</label>
+                <input
+                  class="form-control"
+                  type="file"
+                  id="pluginFile"
+                  accept=".jar"
+                  required
+                />
+              </div>
+              <div class="col-auto">
+                <button type="submit" class="btn btn-primary mb-3">Add</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div> -->
+    <script src="/assets/js/bootstrap.js" defer></script>
+    <script>
+      const path =
+        new URLSearchParams(window.location.search).get("path") ?? "";
+      const pdepth = path.split("/").filter((f) => f.length).length;
+      // let pluginForm = document.querySelector("#plugin_form");
+      let directoryItem = document.querySelector("#directory-item");
+
+      const fileIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="col-2" viewBox="0 0 16 16">
+        <path d="M4 0h5.293A1 1 0 0 1 10 .293L13.707 4a1 1 0 0 1 .293.707V14a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V2a2 2 0 0 1 2-2m5.5 1.5v2a1 1 0 0 0 1 1h2z"/>
+      </svg>
+`;
+      const folderIcon = `
+      <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="currentColor" class="col-2" viewBox="0 0 16 16">
+        <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
+      </svg>
+`;
+
+      async function delete_file(path) {
+        try {
+          await fetch(`/api/file?path=${encodeURIComponent(path)}`, {
+            method: "delete",
+          });
+          window.location.reload();
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      async function load() {
+        const { items } = await (
+          await fetch(`/api/dir?path=${encodeURIComponent(path)}`)
+        ).json();
+
+        directoryItem.innerHTML = "";
+        if (pdepth > 0) {
+          directoryItem.innerHTML = `
+          <li class="list-group-item bg-secondary-subtle align-items-center">
+            <div class="row justify-content-between align-items-center">
+              <div class="col-10 text-break">
+                <div class="row justify-content-start align-items-center">
+                  ${folderIcon}
+                  <a href="/file-manager?path=${encodeURIComponent(
+                    path.split("/").slice(0, -1).join("/")
+                  )}" class="col fs-5 text-black text-decoration-none">..</a>
+                </div>
+              </div>
+            </div>
+          </li>
+          `;
+        }
+
+        directoryItem.innerHTML += items
+          .map((p) => {
+            return `
+          <li class="list-group-item bg-secondary-subtle align-items-center">
+            <div class="row justify-content-between align-items-center">
+              <div class="col-10 text-break">
+                <div class="row justify-content-start align-items-center">
+                  ${p.is_file ? fileIcon : folderIcon}
+                  <a href="${
+                    p.is_file
+                      ?  `/editor?path=${encodeURIComponent(p.path)}`
+                      : `/file-manager?path=${encodeURIComponent(p.path)}`
+                  }" class="col fs-5 text-black text-decoration-none">${
+              p.name
+            }</a>
+                </div>
+              </div>
+              ${
+                !p.is_file
+                  ? ""
+                  : `<button class="btn btn-danger col-2" onclick="delete_file('${p.path}')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="1.25rem" height="1.25rem" fill="currentColor" class="bi bi-trash3-fill" viewBox="0 0 16 16">
+                  <path d="M11 1.5v1h3.5a.5.5 0 0 1 0 1h-.538l-.853 10.66A2 2 0 0 1 11.115 16h-6.23a2 2 0 0 1-1.994-1.84L2.038 3.5H1.5a.5.5 0 0 1 0-1H5v-1A1.5 1.5 0 0 1 6.5 0h3A1.5 1.5 0 0 1 11 1.5m-5 0v1h4v-1a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5M4.5 5.029l.5 8.5a.5.5 0 1 0 .998-.06l-.5-8.5a.5.5 0 1 0-.998.06m6.53-.528a.5.5 0 0 0-.528.47l-.5 8.5a.5.5 0 0 0 .998.058l.5-8.5a.5.5 0 0 0-.47-.528M8 4.5a.5.5 0 0 0-.5.5v8.5a.5.5 0 0 0 1 0V5a.5.5 0 0 0-.5-.5"/>
+                </svg>
+              </button>`
+              }
+            </div>
+          </li>
+          `;
+          })
+          .join("");
+      }
+
+      load();
+    </script>
+  </body>
+</html>

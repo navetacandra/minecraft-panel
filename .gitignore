@@ -2,3 +2,4 @@ venv/
 minecraft_server/
 SERVER.settings
 log.txt
+__pycache__
