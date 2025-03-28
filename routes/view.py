@@ -70,3 +70,15 @@ def editor():
     except Exception as e:
         print(e)
         return abort(500)
+
+
+@view.route("/server-setting", methods=["GET"])
+def server_setting():
+    try:
+        if is_installed():
+            return handle_file_cache(os.path.join(STATIC_PATH, "server_settings.html"))
+        else:
+            return redirect("/")
+    except Exception as e:
+        print(e)
+        return abort(500)
